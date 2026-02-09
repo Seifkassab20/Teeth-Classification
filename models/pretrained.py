@@ -2,6 +2,7 @@ import torch.nn as nn
 from torchvision import models
 
 class PretrainedModel(nn.Module):
+    
     def __init__(self, num_classes):
         super().__init__()
         self.model = models.resnet50(pretrained=True)

@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 import json
 
-from Data.dataloader import get_dataloaders
+from dataloader.dataloader import get_dataloaders
 from models.pretrained import PretrainedModel
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,9 +30,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4 , weight_decay=1e-4)
 EPOCHS = 20
 
 for epoch in range(EPOCHS):
-    # -------------------
-    # TRAINING
-    # -------------------
+
     model.train()
     correct, total = 0, 0
     running_loss = 0.0
@@ -54,9 +52,7 @@ for epoch in range(EPOCHS):
     train_acc = correct / total
     train_loss = running_loss / len(train_loader)
 
-    # -------------------
-    # VALIDATION
-    # -------------------
+
     model.eval()
     correct_val, total_val = 0, 0
     val_loss = 0.0

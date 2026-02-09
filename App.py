@@ -4,13 +4,10 @@ import json
 from PIL import Image
 import torchvision.transforms as transforms
 
-# Import models
-from models.CNN import CNN
+from models.cnn import CNN
 from models.pretrained import PretrainedModel
 
-# -----------------------------
-# Load class names
-# -----------------------------
+
 try:
     with open("class_names.json", "r") as f:
         class_names = json.load(f)
@@ -21,12 +18,10 @@ except FileNotFoundError:
 NUM_CLASSES = len(class_names)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# -----------------------------
-# Load models
-# -----------------------------
-@st.cache_resource  # caches model loading
+
+@st.cache_resource  
 def load_models():
-    custom_model = CNN(NUM_CLASSES)
+    custom_model = CNN(NUM_CLASSES).to(device)
     try:
         custom_model.load_state_dict(torch.load("weights/custom_cnn.pth", map_location=device))
     except FileNotFoundError:
@@ -34,7 +29,7 @@ def load_models():
         return None, None
     custom_model.eval()
 
-    medical_model = PretrainedModel(NUM_CLASSES)
+    medical_model = PretrainedModel(NUM_CLASSES).to(device)
     try:
         medical_model.load_state_dict(torch.load("weights/medical_pretrained.pth", map_location=device))
     except FileNotFoundError:
@@ -46,18 +41,13 @@ def load_models():
 
 custom_model, medical_model = load_models()
 
-# -----------------------------
-# Image preprocessing
-# -----------------------------
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.5]*3, [0.5]*3)
 ])
 
-# -----------------------------
-# Streamlit UI
-# -----------------------------
+
 st.title("🦷 Teeth Image Classification System")
 st.write("Upload a dental image and select a model to classify it.")
 
@@ -77,21 +67,19 @@ if uploaded_file:
 
     img_tensor = transform(image).unsqueeze(0).to(device)
 
-    # Select model
     model = custom_model if model_choice == "Custom CNN (From Scratch)" else medical_model
 
     if model is None:
         st.error("Selected model could not be loaded. Please check model weights.")
         st.stop()
 
-    # Predict
+
     with torch.no_grad():
         outputs = model(img_tensor)
         probs = torch.softmax(outputs, dim=1)
         pred_idx = torch.argmax(probs, 1).item()
         confidence = probs[0][pred_idx].item()
 
-    # Display results
     st.subheader("Prediction Result")
     st.write(f"**Model Used:** {model_choice}")
     st.write(f"**Predicted Class:** {class_names[pred_idx]}")
