@@ -1,0 +1,22 @@
+# Version control
+.git
+.gitignore
+
+# Python cache & virtual env
+__pycache__
+.venv
+venv/
+*.pyc
+
+# Data (Excluded to keep image small, mount if needed for training)
+Teeth DataSet/
+Teeth DataSet.zip
+
+# Documentation & Notebooks
+*.ipynb
+*.docx
+*.txt
+!requirements.txt
+
+# OS generated files
+.DS_Store

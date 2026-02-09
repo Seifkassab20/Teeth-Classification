@@ -6,9 +6,7 @@ import json
 from PIL import Image
 import torchvision.transforms as transforms
 
-# -----------------------------------------------------------------------------
-# 1. PAGE CONFIGURATION & STYLING
-# -----------------------------------------------------------------------------
+
 st.set_page_config(
     page_title="Dental AI Diagnostician",
     page_icon="🦷",
@@ -16,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for a professional look
 st.markdown("""
 <style>
     .main {
@@ -62,13 +59,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# 2. MODEL & DATA LOADING
-# -----------------------------------------------------------------------------
 from models.cnn import CNN
 from models.pretrained import PretrainedModel
 
-# Load Class Names
+
 try:
     with open("class_names.json", "r") as f:
         class_names = json.load(f)
@@ -81,12 +75,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @st.cache_resource
 def load_models():
-    # Initialize models
     custom_model = CNN(NUM_CLASSES).to(device)
     medical_model = PretrainedModel(NUM_CLASSES).to(device)
 
-    # Load Weights
-    # 1. Custom CNN
     try:
         custom_model.load_state_dict(torch.load("weights/custom_cnn.pth", map_location=device))
         custom_model.eval()
@@ -94,7 +85,6 @@ def load_models():
         st.warning("⚠️ Weights for `Custom CNN` not found.")
         custom_model = None
 
-    # 2. Pretrained Model
     try:
         medical_model.load_state_dict(torch.load("weights/medical_pretrained.pth", map_location=device))
         medical_model.eval()
@@ -106,16 +96,13 @@ def load_models():
 
 custom_model, medical_model = load_models()
 
-# Image Preprocessing
+
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
-    # Note: No Normalization, matching the training pipeline
 ])
 
-# -----------------------------------------------------------------------------
-# 3. SIDEBAR CONTROLS
-# -----------------------------------------------------------------------------
+
 with st.sidebar:
     st.title("⚙️ Control Panel")
     
@@ -137,9 +124,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption(f"Running on: **{device.type.upper()}**")
 
-# -----------------------------------------------------------------------------
-# 4. MAIN INTERFACE
-# -----------------------------------------------------------------------------
+
 st.title("🦷 Dental Diagnosis AI")
 st.markdown("#### Automated classification of dental conditions")
 
@@ -162,22 +147,20 @@ with col2:
         if model is None:
             st.error("Selected model is not available.")
         else:
-            # Prediction Logic
             img_tensor = transform(image).unsqueeze(0).to(device)
             
             with torch.no_grad():
                 outputs = model(img_tensor)
                 probs = F.softmax(outputs, dim=1)
                 
-                # Get Top Prediction
+
                 conf, pred_idx = torch.max(probs, 1)
                 prediction = class_names[pred_idx.item()]
                 confidence = conf.item()
                 
-                # Colors based on confidence
+
                 color = "#28a745" if confidence > 0.8 else "#ffc107" if confidence > 0.5 else "#dc3545"
 
-                # Display Main Result Card
                 st.markdown(f"""
                 <div class="prediction-card" style="border-top: 5px solid {color};">
                     <div class="metric-label">Diagnosis</div>
@@ -188,20 +171,16 @@ with col2:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Detailed Metrics
                 st.markdown("#### Probability Distribution")
-                
-                # Prepare data for chart
+
                 probs_np = probs.cpu().numpy().flatten()
                 df = pd.DataFrame({
                     "Condition": class_names,
                     "Probability": probs_np
                 }).sort_values(by="Probability", ascending=False)
 
-                # Display Chart
                 st.bar_chart(df.set_index("Condition"), color=color)
 
-                # Show Raw Data Expander
                 with st.expander("View Raw Probabilities"):
                     st.dataframe(df.style.format({"Probability": "{:.2%}"}))
 
